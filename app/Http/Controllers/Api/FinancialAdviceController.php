@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -45,7 +46,7 @@ class FinancialAdviceController extends Controller
                     ]],
                     'generationConfig' => ['maxOutputTokens' => 800],
                 ]);
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+        } catch (ConnectionException $e) {
             Log::warning('Gemini API connection failed: '.$e->getMessage());
 
             return response()->json(['message' => 'Gagal menghubungi perkhidmatan AI. Sila cuba lagi.'], 502);
