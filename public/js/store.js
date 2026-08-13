@@ -20,6 +20,7 @@ const state = {
   financialGoals: [],
   assets: [],
   budgets: [],
+  recurringTransactions: [],
 };
 
 export const store = {
@@ -121,6 +122,22 @@ export const store = {
   removeBudget(id) {
     state.budgets = state.budgets.filter((b) => b.id !== id);
     emit('budgets:changed', state.budgets);
+  },
+  setRecurringTransactions(list) {
+    state.recurringTransactions = list;
+    emit('recurringTransactions:changed', state.recurringTransactions);
+  },
+  addRecurringTransaction(recurring) {
+    state.recurringTransactions = [...state.recurringTransactions, recurring];
+    emit('recurringTransactions:changed', state.recurringTransactions);
+  },
+  replaceRecurringTransaction(recurring) {
+    state.recurringTransactions = state.recurringTransactions.map((r) => (r.id === recurring.id ? recurring : r));
+    emit('recurringTransactions:changed', state.recurringTransactions);
+  },
+  removeRecurringTransaction(id) {
+    state.recurringTransactions = state.recurringTransactions.filter((r) => r.id !== id);
+    emit('recurringTransactions:changed', state.recurringTransactions);
   },
 };
 

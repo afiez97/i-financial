@@ -27,7 +27,7 @@ async function bootstrap() {
   store.setUser(user);
   document.getElementById('app-user-email').textContent = user.email;
 
-  const [cardProfile, cashFlowEntries, debts, emergencyFund, financialGoals, assets, budgets] = await Promise.all([
+  const [cardProfile, cashFlowEntries, debts, emergencyFund, financialGoals, assets, budgets, recurringTransactions] = await Promise.all([
     api.get('/card-profile').catch(() => null),
     api.get('/cash-flow-entries').catch(() => []),
     api.get('/debts').catch(() => []),
@@ -35,6 +35,7 @@ async function bootstrap() {
     api.get('/financial-goals').catch(() => []),
     api.get('/assets').catch(() => []),
     api.get('/budgets').catch(() => []),
+    api.get('/recurring-transactions').catch(() => []),
   ]);
 
   store.setCardProfile(cardProfile);
@@ -44,6 +45,7 @@ async function bootstrap() {
   store.setGoals(financialGoals ?? []);
   store.setAssets(assets ?? []);
   store.setBudgets(budgets ?? []);
+  store.setRecurringTransactions(recurringTransactions ?? []);
 
   initNav();
   initThemeToggle();

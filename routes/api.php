@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\DebtController;
 use App\Http\Controllers\Api\EmergencyFundController;
 use App\Http\Controllers\Api\FinancialAdviceController;
 use App\Http\Controllers\Api\FinancialGoalController;
+use App\Http\Controllers\Api\RecurringTransactionController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -35,6 +36,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('assets', AssetController::class);
 
     Route::apiResource('budgets', BudgetController::class);
+
+    Route::apiResource('recurring-transactions', RecurringTransactionController::class)
+        ->only(['index', 'update', 'destroy'])
+        ->parameters(['recurring-transactions' => 'recurring_transaction']);
 
     Route::apiResource('financial-goals', FinancialGoalController::class)
         ->parameters(['financial-goals' => 'financial_goal']);

@@ -422,6 +422,12 @@
               <input type="number" id="cashflowIncomeAmount" data-field="amount" min="0" step="0.01">
               <span id="cashflowIncomeAmount-error" class="field-error"></span>
             </div>
+            <div class="field">
+              <label style="display:flex;align-items:center;gap:8px;font-weight:400;">
+                <input type="checkbox" id="cashflowIncomeRecurring">
+                Jadikan berulang setiap bulan
+              </label>
+            </div>
             <div class="form-actions">
               <button type="submit" id="cashflow-income-submit-btn" class="btn btn-primary" style="flex:1;">Tambah Pendapatan</button>
               <button type="button" id="cashflow-income-cancel-btn" class="btn btn-secondary btn-sm" data-action="cancel-edit-entry" hidden>Batal</button>
@@ -446,6 +452,12 @@
               <input type="number" id="cashflowExpenseAmount" data-field="amount" min="0" step="0.01">
               <span id="cashflowExpenseAmount-error" class="field-error"></span>
             </div>
+            <div class="field">
+              <label style="display:flex;align-items:center;gap:8px;font-weight:400;">
+                <input type="checkbox" id="cashflowExpenseRecurring">
+                Jadikan berulang setiap bulan
+              </label>
+            </div>
             <div class="form-actions">
               <button type="submit" id="cashflow-expense-submit-btn" class="btn btn-primary" style="flex:1;">Tambah Perbelanjaan</button>
               <button type="button" id="cashflow-expense-cancel-btn" class="btn btn-secondary btn-sm" data-action="cancel-edit-entry" hidden>Batal</button>
@@ -453,6 +465,11 @@
           </form>
           <div id="cashflow-expense-list" style="margin-top:16px;"></div>
         </div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <h3>Templat Berulang</h3>
+        <div id="recurring-list"></div>
       </div>
 
       <div class="card" style="margin-top:20px;">

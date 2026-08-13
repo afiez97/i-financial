@@ -7,18 +7,18 @@ use App\Enums\CashFlowType;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['month', 'year', 'type', 'category', 'label', 'amount', 'recurring_transaction_id'])]
-class CashFlowEntry extends Model
+#[Fillable(['type', 'category', 'label', 'amount', 'is_active'])]
+class RecurringTransaction extends Model
 {
     protected function casts(): array
     {
         return [
             'type' => CashFlowType::class,
             'category' => CashFlowCategory::class,
-            'month' => 'integer',
-            'year' => 'integer',
             'amount' => 'decimal:2',
+            'is_active' => 'boolean',
         ];
     }
 
@@ -27,9 +27,9 @@ class CashFlowEntry extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function recurringTransaction(): BelongsTo
+    public function generatedEntries(): HasMany
     {
-        return $this->belongsTo(RecurringTransaction::class);
+        return $this->hasMany(CashFlowEntry::class);
     }
 
     /** Scope every route-model-bound lookup to the authenticated user, so a

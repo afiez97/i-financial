@@ -40,6 +40,11 @@ class User extends Authenticatable
         return $this->hasMany(Budget::class);
     }
 
+    public function recurringTransactions(): HasMany
+    {
+        return $this->hasMany(RecurringTransaction::class);
+    }
+
     public function debts(): HasMany
     {
         return $this->hasMany(Debt::class);

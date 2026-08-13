@@ -121,6 +121,48 @@ function render(root) {
 
   renderCategoryChart(root.querySelector('#cashflow-category-chart'), totals.byCategory);
   renderComparisonChart(root.querySelector('#cashflow-comparison-chart'), totals.income, totals.expense);
+  renderRecurringList(root);
+}
+
+function renderRecurringList(root) {
+  const container = root.querySelector('#recurring-list');
+  const { recurringTransactions } = store.getState();
+  if (recurringTransactions.length === 0) {
+    container.innerHTML = '<div class="data-empty">Belum ada templat berulang.</div>';
+    return;
+  }
+  container.innerHTML = `<div class="data-list">${recurringTransactions.map((r) => `
+    <div class="data-row" data-id="${r.id}">
+      <div class="data-main">
+        <div class="data-title">${categoryLabel(r.category)}${r.label ? ` · ${escapeHtml(r.label)}` : ''}${r.is_active ? '' : ' (tidak aktif)'}</div>
+      </div>
+      <div class="data-amount">${formatRM(r.amount)}</div>
+      <button type="button" class="btn btn-secondary btn-sm" data-action="toggle-recurring" data-id="${r.id}">${r.is_active ? 'Nyahaktif' : 'Aktifkan'}</button>
+      <button type="button" class="btn btn-danger btn-sm" data-action="delete-recurring" data-id="${r.id}">Padam</button>
+    </div>
+  `).join('')}</div>`;
+}
+
+async function toggleRecurringActive(recurring) {
+  try {
+    const updated = await api.put(`/recurring-transactions/${recurring.id}`, {
+      type: recurring.type, category: recurring.category, label: recurring.label, amount: recurring.amount,
+      is_active: !recurring.is_active,
+    });
+    store.replaceRecurringTransaction(updated);
+  } catch (err) {
+    window.dispatchEvent(new CustomEvent('toast', { detail: err.message || 'Gagal mengemaskini templat.' }));
+  }
+}
+
+async function deleteRecurringTransaction(id) {
+  if (!confirm('Padam templat berulang ini? Rekod aliran tunai yang sudah dijana tidak akan dipadam.')) return;
+  try {
+    await api.del(`/recurring-transactions/${id}`);
+    store.removeRecurringTransaction(Number(id));
+  } catch (err) {
+    window.dispatchEvent(new CustomEvent('toast', { detail: err.message || 'Gagal memadam.' }));
+  }
 }
 
 function populateCategorySelect(select, categories) {
@@ -167,6 +209,7 @@ async function saveEntry(root, type, formId) {
   const amountInput = form.querySelector('[data-field="amount"]');
   const labelInput = form.querySelector('[data-field="label"]');
   const categorySelect = form.querySelector('[data-field="category"]');
+  const recurringCheckbox = root.querySelector(type === 'income' ? '#cashflowIncomeRecurring' : '#cashflowExpenseRecurring');
   const { selectedPeriod } = store.getState();
 
   const amount = Number(amountInput.value);
@@ -186,6 +229,9 @@ async function saveEntry(root, type, formId) {
     label: labelInput.value.trim() || null,
     amount,
   };
+  if (!editingEntryId[type] && recurringCheckbox.checked) {
+    payload.is_recurring = true;
+  }
 
   const btn = form.querySelector('button[type="submit"]');
   btn.disabled = true;
@@ -197,8 +243,10 @@ async function saveEntry(root, type, formId) {
     } else {
       const entry = await api.post('/cash-flow-entries', payload);
       store.addCashFlowEntry(entry);
+      if (entry.recurring_transaction) store.addRecurringTransaction(entry.recurring_transaction);
       amountInput.value = '';
       if (labelInput) labelInput.value = '';
+      recurringCheckbox.checked = false;
     }
   } catch (err) {
     window.dispatchEvent(new CustomEvent('toast', { detail: err.message || 'Gagal menyimpan rekod.' }));
@@ -250,9 +298,18 @@ export function initCashFlow() {
     const editBtn = e.target.closest('[data-action="edit-entry"]');
     if (editBtn) return startEditEntry(root, editBtn.dataset.id);
     const deleteBtn = e.target.closest('[data-action="delete-entry"]');
-    if (deleteBtn) deleteEntry(root, deleteBtn.dataset.id);
+    if (deleteBtn) return deleteEntry(root, deleteBtn.dataset.id);
+    const toggleRecurringBtn = e.target.closest('[data-action="toggle-recurring"]');
+    if (toggleRecurringBtn) {
+      const recurring = store.getState().recurringTransactions.find((r) => r.id === Number(toggleRecurringBtn.dataset.id));
+      if (recurring) toggleRecurringActive(recurring);
+      return;
+    }
+    const deleteRecurringBtn = e.target.closest('[data-action="delete-recurring"]');
+    if (deleteRecurringBtn) deleteRecurringTransaction(deleteRecurringBtn.dataset.id);
   });
 
   on('cashFlow:changed', () => { renderPeriodSelect(root); render(root); });
   on('period:changed', () => render(root));
+  on('recurringTransactions:changed', () => renderRecurringList(root));
 }

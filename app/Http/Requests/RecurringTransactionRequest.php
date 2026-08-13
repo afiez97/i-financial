@@ -8,7 +8,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Validator;
 
-class CashFlowEntryRequest extends FormRequest
+class RecurringTransactionRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -18,21 +18,18 @@ class CashFlowEntryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'month' => ['required', 'integer', 'between:1,12'],
-            'year' => ['required', 'integer', 'between:2000,2100'],
             'type' => ['required', new Enum(CashFlowType::class)],
             'category' => ['required', new Enum(CashFlowCategory::class)],
             'label' => ['nullable', 'string', 'max:255'],
-            'amount' => ['required', 'numeric', 'min:0'],
-            'is_recurring' => ['sometimes', 'boolean'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'is_active' => ['sometimes', 'boolean'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'month.between' => 'Bulan mesti antara 1 dan 12.',
-            'amount.min' => 'Jumlah tidak boleh negatif.',
+            'amount.min' => 'Jumlah mesti lebih daripada RM0.',
         ];
     }
 
