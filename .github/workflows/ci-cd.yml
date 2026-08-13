@@ -46,6 +46,7 @@ jobs:
     needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    environment: afiez-live
     concurrency:
       group: production-deploy
       cancel-in-progress: false
