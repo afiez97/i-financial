@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pusat Kawalan Kewangan Peribadi</title>
+<script>
+  (function () {
+    var saved = localStorage.getItem('theme');
+    if (saved === 'light' || saved === 'dark') {
+      document.documentElement.setAttribute('data-theme', saved);
+    }
+  })();
+</script>
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+
+<div id="app-loading" class="container" style="padding-top:80px;text-align:center;color:var(--text-muted);">
+  Memuatkan...
+</div>
+
+<div id="app-shell" hidden>
+  <header class="app-header">
+    <div class="container">
+      <p class="app-title">💰 Kewangan Peribadi</p>
+      <div class="row">
+        <span id="app-user-email" class="app-user"></span>
+        <button id="theme-toggle-btn" type="button" class="btn btn-secondary btn-sm" aria-label="Tukar tema">🌙</button>
+        <button id="logout-btn" type="button" class="btn btn-secondary btn-sm">Log Keluar</button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="app-nav">
+    <div class="container">
+      <a href="#overview">Ringkasan</a>
+      <a href="#cashflow">Aliran Tunai</a>
+      <a href="#debts">Hutang &amp; DTI</a>
+      <a href="#assets">Aset</a>
+      <a href="#emergency">Tabung Kecemasan</a>
+      <a href="#goals">Matlamat Kewangan</a>
+      <a href="#uob">Kad UOB ONE</a>
+      <a href="#waiver">Waiver Yuran</a>
+    </div>
+  </nav>
+
+  <main class="container">
+
+    <!-- ================= MODULE OVERVIEW: RINGKASAN KEWANGAN ================= -->
+    <section id="section-overview">
+      <div class="section-heading">
+        <h2>Ringkasan Kewangan</h2>
+        <p class="text-secondary">Pandangan pantas kedudukan kewangan anda bulan <span id="overview-period-label"></span>.</p>
+      </div>
+
+      <div id="overview-card-status-banner" class="banner banner-warning" hidden>
+        <span class="banner-icon">💳</span>
+        <div id="overview-card-status-text"></div>
+      </div>
+
+      <div class="card stat-tile">
+        <div class="stat-label">Selamat Dibelanjakan Bulan Ini</div>
+        <div class="stat-value" id="overview-safe-to-spend"></div>
+        <p class="text-muted" id="overview-sts-period-note" style="font-size:12px;margin-top:4px;" hidden></p>
+        <hr style="border-color:var(--gridline);margin:14px 0;">
+        <div class="row-between" style="font-size:13px;">
+          <span class="text-secondary">Baki Bersih Bulan Ini</span>
+          <strong id="overview-sts-net"></strong>
+        </div>
+        <div class="row-between" style="font-size:13px;margin-top:6px;">
+          <span class="text-secondary">Tolak: Bayaran Min. Hutang &amp; Kad</span>
+          <strong id="overview-sts-debt"></strong>
+        </div>
+        <div class="row-between" id="overview-sts-ef-row" style="font-size:13px;margin-top:6px;" hidden>
+          <span class="text-secondary">Tolak: Simpanan Tabung Kecemasan</span>
+          <strong id="overview-sts-ef"></strong>
+        </div>
+        <p class="text-muted" style="font-size:12px;margin-top:10px;">Anggaran ini mengandaikan bayaran minimum hutang belum direkod sebagai perbelanjaan dalam Aliran Tunai. Jika anda sudah catat bayaran ini di sana, angka di atas mungkin terlalu berhemat.</p>
+      </div>
+
+      <div id="overview-sts-notice" class="banner" style="margin-top:16px;" hidden>
+        <span class="banner-icon" id="overview-sts-notice-icon"></span>
+        <div id="overview-sts-notice-text"></div>
+      </div>
+
+      <div class="grid grid-3" style="margin-top:20px;">
+        <div class="card stat-tile">
+          <div class="stat-label">Baki Bersih Bulan Ini</div>
+          <div class="stat-value" id="overview-net-total"></div>
+        </div>
+        <div class="card stat-tile">
+          <div class="stat-label">Jumlah Hutang Keseluruhan</div>
+          <div class="stat-value" id="overview-total-debt"></div>
+          <div class="stat-sub">termasuk baki Kad UOB ONE</div>
+        </div>
+        <div class="card stat-tile">
+          <div class="stat-label">Kekayaan Bersih</div>
+          <div class="stat-value" id="overview-net-worth"></div>
+          <div class="stat-sub">aset &minus; hutang keseluruhan</div>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:20px;">
+        <div class="card">
+          <div class="row-between">
+            <h3 style="margin:0;">Nisbah DTI</h3>
+            <span id="overview-dti-pill" class="pill" hidden></span>
+          </div>
+          <div class="stat-value" id="overview-dti-value" style="margin-top:8px;"></div>
+          <p class="text-muted" style="font-size:12px;margin-top:4px;">Selamat &lt;35%, Amaran 35–45%, Bahaya &gt;45%.</p>
+        </div>
+        <div class="card">
+          <h3>Tabung Kecemasan</h3>
+          <div class="stat-value" id="overview-emergency-percent"></div>
+          <p class="text-muted" id="overview-emergency-runway" style="font-size:12px;margin-top:4px;"></p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <h3>Matlamat Kewangan</h3>
+        <div id="overview-goals-empty" class="text-muted" style="font-size:13px;" hidden>Belum ada matlamat direkod — tambah satu di tab Matlamat Kewangan.</div>
+        <div id="overview-goals-summary">
+          <div class="stat-value" id="overview-goals-percent"></div>
+          <p class="text-muted" id="overview-goals-sub" style="font-size:12px;margin-top:4px;"></p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <h3>Status Had Perbelanjaan</h3>
+        <div id="overview-budget-empty" class="text-muted" style="font-size:13px;" hidden>Belum ada had perbelanjaan ditetapkan — tetapkan di tab Aliran Tunai.</div>
+        <div id="overview-budget-summary">
+          <div class="stat-value" id="overview-budget-status"></div>
+          <p class="text-muted" id="overview-budget-sub" style="font-size:12px;margin-top:4px;"></p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <h3>Trend Baki Bersih (6 Bulan Terakhir)</h3>
+        <div id="overview-trend-empty" class="text-muted" style="font-size:13px;" hidden>Belum cukup data — rekod aliran tunai untuk beberapa bulan untuk lihat trend.</div>
+        <div class="chart-box"><canvas id="overview-trend-chart"></canvas></div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <h3>Cadangan Untuk Anda</h3>
+        <div id="overview-insights-list" class="stack"></div>
+        <p class="text-muted" id="overview-insights-empty" style="font-size:13px;" hidden>Tiada cadangan buat masa ini — data belum mencukupi atau semuanya nampak baik.</p>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="row-between">
+          <h3 style="margin:0;">Nasihat AI</h3>
+          <button type="button" id="ai-advice-btn" class="btn btn-primary btn-sm">Dapatkan Nasihat AI</button>
+        </div>
+        <p class="text-muted" style="font-size:12px;margin-top:8px;">Dijana oleh AI (Gemini) berdasarkan data kewangan anda sekarang — bukan pengganti nasihat kewangan profesional.</p>
+        <div id="ai-advice-result" class="text-secondary" style="font-size:14px;margin-top:12px;white-space:pre-wrap;" hidden></div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <h3>Terokai Lanjut</h3>
+        <div class="row">
+          <a href="#cashflow" class="btn btn-secondary btn-sm">Aliran Tunai</a>
+          <a href="#debts" class="btn btn-secondary btn-sm">Hutang &amp; DTI</a>
+          <a href="#emergency" class="btn btn-secondary btn-sm">Tabung Kecemasan</a>
+          <a href="#goals" class="btn btn-secondary btn-sm">Matlamat Kewangan</a>
+          <a href="#uob" class="btn btn-secondary btn-sm">Kad UOB ONE</a>
+          <a href="#waiver" class="btn btn-secondary btn-sm">Waiver Yuran</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= MODULE A: UOB ONE CALCULATOR ================= -->
+    <section id="section-uob" hidden>
+      <div class="section-heading">
+        <h2>Kalkulator Kad UOB ONE</h2>
+        <p class="text-secondary">Enjin pengiraan faedah dua fasa, pengesan denda lewat bayar &amp; perbandingan senario penjimatan.</p>
+      </div>
+
+      <div id="uob-delinquent-banner" class="banner banner-critical" hidden>
+        <span class="banner-icon">⚠️</span>
+        <div>
+          <strong>Amaran Status Delinquent (Fasal 5c)</strong><br>
+          Bayaran anda lewat daripada tarikh akhir. Rebat tunai yang telah dikumpul pada kitaran ini berisiko hangus/terbatal.
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Butiran Kad</h3>
+          <form id="uob-form">
+            <div class="field">
+              <label>Jenis Kad</label>
+              <div class="radio-group">
+                <label><input type="radio" name="cardType" value="classic" id="uobCardClassic"> Classic</label>
+                <label><input type="radio" name="cardType" value="platinum" id="uobCardPlatinum"> Platinum</label>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="balance">Jumlah Baki (RM)</label>
+              <input type="number" id="balance" min="0" step="0.01" required>
+              <span id="balance-error" class="field-error"></span>
+            </div>
+
+            <div class="field-row field-row-2">
+              <div class="field">
+                <label for="statementDay">Tarikh Penyata (hb)</label>
+                <input type="number" id="statementDay" min="1" max="31" step="1" required>
+                <span id="statementDay-error" class="field-error"></span>
+              </div>
+              <div class="field">
+                <label for="dueDay">Tarikh Akhir Bayaran (hb)</label>
+                <input type="number" id="dueDay" min="1" max="31" step="1" required>
+                <span id="dueDay-error" class="field-error"></span>
+              </div>
+            </div>
+
+            <div class="field-row field-row-2">
+              <div class="field">
+                <label for="paymentAmount">Jumlah Bayaran (RM)</label>
+                <input type="number" id="paymentAmount" min="0" step="0.01" required>
+                <span id="paymentAmount-error" class="field-error"></span>
+              </div>
+              <div class="field">
+                <label for="paymentDay">Tarikh Bayaran Dibuat (hb)</label>
+                <input type="number" id="paymentDay" min="1" max="31" step="1" required>
+                <span id="paymentDay-error" class="field-error"></span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="interestRate">Kadar Faedah</label>
+              <select id="interestRate"></select>
+            </div>
+
+            <hr style="border-color:var(--gridline);margin:6px 0 16px;">
+
+            <div class="field">
+              <label>Status Kad</label>
+              <div class="radio-group">
+                <label><input type="radio" name="cardStatus" value="active" id="cardStatusActive"> Aktif</label>
+                <label><input type="radio" name="cardStatus" value="planned_termination" id="cardStatusPlanned"> Rancang Terminate</label>
+                <label><input type="radio" name="cardStatus" value="terminated" id="cardStatusTerminated"> Sudah Terminate</label>
+              </div>
+            </div>
+
+            <div id="uob-termination-fields" hidden>
+              <div class="field">
+                <label for="terminationTargetDate">Tarikh Sasaran Terminate</label>
+                <input type="date" id="terminationTargetDate">
+                <span id="terminationTargetDate-error" class="field-error"></span>
+              </div>
+              <div class="field">
+                <label for="terminationNote">Nota (pilihan)</label>
+                <textarea id="terminationNote" rows="2" placeholder="cth: nak tukar ke kad lain, elak yuran tahunan"></textarea>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" id="uob-save-btn" class="btn btn-primary">Simpan</button>
+              <span id="uob-unsaved" class="unsaved-indicator" hidden>Perubahan belum disimpan</span>
+            </div>
+          </form>
+        </div>
+
+        <div class="stack">
+          <div class="card">
+            <h3>Butiran Pengiraan (Senario B — Bayar Hari Ini)</h3>
+            <div class="grid grid-2" style="gap:10px;">
+              <div>
+                <div class="text-muted" style="font-size:12px;">Tarikh Penyata</div>
+                <div id="uob-statement-date" style="font-weight:600;"></div>
+              </div>
+              <div>
+                <div class="text-muted" style="font-size:12px;">Tarikh Akhir Bayaran</div>
+                <div id="uob-due-date" style="font-weight:600;"></div>
+              </div>
+              <div>
+                <div class="text-muted" style="font-size:12px;">Tarikh Bayaran Dibuat</div>
+                <div id="uob-payment-date" style="font-weight:600;"></div>
+              </div>
+              <div>
+                <div class="text-muted" style="font-size:12px;">Penyata Seterusnya</div>
+                <div id="uob-next-statement-date" style="font-weight:600;"></div>
+              </div>
+            </div>
+            <hr style="border-color:var(--gridline);margin:14px 0;">
+            <div class="data-row" style="border:none;">
+              <div class="data-main">
+                <div class="data-title">Fasa 1 — Baki Penuh (<span id="uob-phase1-days"></span>)</div>
+              </div>
+              <div class="data-amount" id="uob-phase1-interest"></div>
+            </div>
+            <div class="data-row" style="border:none;">
+              <div class="data-main">
+                <div class="data-title">Fasa 2 — Baki Berbaki (<span id="uob-phase2-days"></span>)</div>
+              </div>
+              <div class="data-amount" id="uob-phase2-interest"></div>
+            </div>
+            <div class="data-row" style="border:none;">
+              <div class="data-main"><div class="data-title">Denda Lewat Bayar (1%)</div></div>
+              <div class="data-amount" id="uob-late-fee"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Pemantau Terma Pintar</h3>
+            <p class="text-secondary" style="font-size:13px;">
+              Sasaran perbelanjaan tahunan untuk pengecualian yuran (kad <span id="uob-card-type-label"></span>, efektif Jan 2026):
+            </p>
+            <div class="row-between">
+              <span>Sasaran Perbelanjaan</span>
+              <strong id="uob-waiver-threshold"></strong>
+            </div>
+            <div class="row-between">
+              <span>Yuran Tahunan</span>
+              <strong id="uob-waiver-fee"></strong>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="row-between">
+              <h3 style="margin:0;">Status Penamatan Kad</h3>
+              <span id="uob-termination-status-pill" class="pill"></span>
+            </div>
+            <p id="uob-termination-summary" class="text-secondary" style="font-size:13px;margin-top:8px;"></p>
+            <div id="uob-termination-checklist" class="banner banner-warning" style="margin-top:4px;" hidden>
+              <span class="banner-icon">📋</span>
+              <div>
+                <strong>Semak sebelum terminate:</strong>
+                <ul style="margin:6px 0 0;padding-left:18px;">
+                  <li>Tuntut/guna rebat tunai yang belum dikreditkan pada kitaran ini.</li>
+                  <li>Batalkan sebarang auto-debit/subscription yang terikat dengan kad ini.</li>
+                  <li>Bayar penuh baki semasa sebelum tarikh sasaran terminate.</li>
+                  <li>Semak tab "Waiver Yuran" — terminate sebelum genap setahun mungkin sia-siakan perbelanjaan yang telah dikira ke arah pengecualian yuran.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Perbandingan Penjimatan: Senario A vs Senario B</h3>
+        <div class="grid grid-2">
+          <div class="chart-box"><canvas id="uob-savings-chart"></canvas></div>
+          <div class="stack" style="justify-content:center;">
+            <div class="row-between">
+              <span>Senario A — Kekalkan Baki</span>
+              <strong id="uob-scenario-a-cost"></strong>
+            </div>
+            <div class="row-between">
+              <span>Senario B — Bayar Hari Ini</span>
+              <strong id="uob-scenario-b-cost"></strong>
+            </div>
+            <hr style="border-color:var(--gridline);width:100%;">
+            <div class="stat-tile">
+              <div class="stat-label">Penjimatan Bersih</div>
+              <div class="stat-value" id="uob-net-savings"></div>
+              <div class="stat-sub">mesra mata: nilai positif = anda menjimatkan</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= MODULE B: MONTHLY CASH FLOW ================= -->
+    <section id="section-cashflow" hidden>
+      <div class="section-heading row-between">
+        <div>
+          <h2>Aliran Tunai Bulanan</h2>
+          <p class="text-secondary">Pendapatan vs perbelanjaan mengikut kategori.</p>
+        </div>
+        <div class="month-switcher">
+          <label for="cashflow-period-select" class="text-secondary" style="font-size:13px;">Bulan</label>
+          <select id="cashflow-period-select"></select>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card stat-tile">
+          <div class="stat-label">Jumlah Pendapatan</div>
+          <div class="stat-value" id="cashflow-income-total"></div>
+        </div>
+        <div class="card stat-tile">
+          <div class="stat-label">Jumlah Perbelanjaan</div>
+          <div class="stat-value" id="cashflow-expense-total"></div>
+        </div>
+      </div>
+
+      <div class="card stat-tile" style="margin-top:20px;">
+        <div class="stat-label">Baki Bersih</div>
+        <div class="stat-value" id="cashflow-net-total"></div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:20px;">
+        <div class="card">
+          <h3>Pecahan Perbelanjaan</h3>
+          <div class="chart-box"><canvas id="cashflow-category-chart"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>Pendapatan vs Perbelanjaan</h3>
+          <div class="chart-box"><canvas id="cashflow-comparison-chart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:20px;">
+        <div class="card">
+          <h3>Tambah Pendapatan</h3>
+          <form id="cashflow-income-form">
+            <div class="field">
+              <label for="cashflow-income-category">Kategori</label>
+              <select id="cashflow-income-category" data-field="category"></select>
+            </div>
+            <div class="field">
+              <label for="cashflowIncomeLabel">Catatan (pilihan)</label>
+              <input type="text" id="cashflowIncomeLabel" data-field="label" placeholder="cth: Gaji Ogos">
+            </div>
+            <div class="field">
+              <label for="cashflowIncomeAmount">Jumlah (RM)</label>
+              <input type="number" id="cashflowIncomeAmount" data-field="amount" min="0" step="0.01">
+              <span id="cashflowIncomeAmount-error" class="field-error"></span>
+            </div>
+            <div class="form-actions">
+              <button type="submit" id="cashflow-income-submit-btn" class="btn btn-primary" style="flex:1;">Tambah Pendapatan</button>
+              <button type="button" id="cashflow-income-cancel-btn" class="btn btn-secondary btn-sm" data-action="cancel-edit-entry" hidden>Batal</button>
+            </div>
+          </form>
+          <div id="cashflow-income-list" style="margin-top:16px;"></div>
+        </div>
+
+        <div class="card">
+          <h3>Tambah Perbelanjaan</h3>
+          <form id="cashflow-expense-form">
+            <div class="field">
+              <label for="cashflow-expense-category">Kategori</label>
+              <select id="cashflow-expense-category" data-field="category"></select>
+            </div>
+            <div class="field">
+              <label for="cashflowExpenseLabel">Catatan (pilihan)</label>
+              <input type="text" id="cashflowExpenseLabel" data-field="label" placeholder="cth: Petrol minggu 1">
+            </div>
+            <div class="field">
+              <label for="cashflowExpenseAmount">Jumlah (RM)</label>
+              <input type="number" id="cashflowExpenseAmount" data-field="amount" min="0" step="0.01">
+              <span id="cashflowExpenseAmount-error" class="field-error"></span>
+            </div>
+            <div class="form-actions">
+              <button type="submit" id="cashflow-expense-submit-btn" class="btn btn-primary" style="flex:1;">Tambah Perbelanjaan</button>
+              <button type="button" id="cashflow-expense-cancel-btn" class="btn btn-secondary btn-sm" data-action="cancel-edit-entry" hidden>Batal</button>
+            </div>
+          </form>
+          <div id="cashflow-expense-list" style="margin-top:16px;"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <h3>Had Perbelanjaan Bulanan</h3>
+        <div id="budget-progress-empty" class="text-muted" style="font-size:13px;" hidden>Belum ada had perbelanjaan ditetapkan.</div>
+        <div id="budget-progress-list" class="stack"></div>
+        <details style="margin-top:14px;">
+          <summary style="cursor:pointer;font-weight:600;font-size:13px;">Urus Had Perbelanjaan</summary>
+          <form id="budget-form" style="margin-top:12px;">
+            <div class="field-row field-row-2">
+              <div class="field">
+                <label for="budgetCategory">Kategori</label>
+                <select id="budgetCategory"></select>
+              </div>
+              <div class="field">
+                <label for="budgetLimit">Had Bulanan (RM)</label>
+                <input type="number" id="budgetLimit" min="0" step="0.01">
+                <span id="budgetLimit-error" class="field-error"></span>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" id="budget-submit-btn" class="btn btn-primary" style="flex:1;">Tetapkan Had</button>
+              <button type="button" id="budget-cancel-edit-btn" class="btn btn-secondary btn-sm" hidden>Batal</button>
+            </div>
+          </form>
+          <div id="budget-manage-list" style="margin-top:12px;"></div>
+        </details>
+      </div>
+    </section>
+
+    <!-- ================= MODULE C: DEBT TRACKER & DTI ================= -->
+    <section id="section-debts" hidden>
+      <div class="section-heading">
+        <h2>Penjejak Hutang &amp; Nisbah DTI</h2>
+        <p class="text-secondary">Meter Kesihatan Kewangan — Selamat &lt;35%, Amaran 35–45%, Bahaya &gt;45%.</p>
+      </div>
+
+      <div class="card">
+        <h3>Meter Kesihatan Kewangan (DTI)</h3>
+        <div id="dti-no-income" class="banner banner-neutral" hidden>
+          Tiada pendapatan direkod untuk <span id="dti-income-period"></span> — masukkan pendapatan di tab Aliran Tunai untuk mengira DTI.
+        </div>
+        <div class="gauge-wrap">
+          <canvas id="dti-gauge-chart"></canvas>
+          <div class="gauge-center">
+            <div class="gauge-value" id="dti-value"></div>
+            <span id="dti-status-pill" class="pill" hidden></span>
+          </div>
+        </div>
+        <div class="grid grid-2" style="margin-top:16px;">
+          <div class="row-between"><span class="text-secondary">Pendapatan Bulanan</span><strong id="dti-income-used"></strong></div>
+          <div class="row-between"><span class="text-secondary">Jumlah Bayaran Min. Hutang</span><strong id="dti-obligations-total"></strong></div>
+          <div class="row-between"><span class="text-secondary">Anggaran Min. Kad UOB ONE</span><strong id="dti-uob-min"></strong></div>
+          <div class="row-between"><span class="text-secondary">Bayaran Min. Hutang Lain</span><strong id="dti-debts-min"></strong></div>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:20px;">
+        <div class="card">
+          <h3>Tambah Hutang</h3>
+          <form id="debt-form">
+            <div class="field">
+              <label for="debtName">Nama Hutang</label>
+              <input type="text" id="debtName" placeholder="cth: PTPTN">
+              <span id="debtName-error" class="field-error"></span>
+            </div>
+            <div class="field">
+              <label for="debtType">Jenis</label>
+              <select id="debtType"></select>
+            </div>
+            <div class="field-row field-row-2">
+              <div class="field">
+                <label for="debtBalance">Baki (RM)</label>
+                <input type="number" id="debtBalance" min="0" step="0.01">
+                <span id="debtBalance-error" class="field-error"></span>
+              </div>
+              <div class="field">
+                <label for="debtInterestRate">Kadar Faedah (%)</label>
+                <input type="number" id="debtInterestRate" min="0" max="100" step="0.01" value="0">
+              </div>
+            </div>
+            <div class="field">
+              <label for="debtMinPayment">Bayaran Minimum Bulanan (RM, pilihan)</label>
+              <input type="number" id="debtMinPayment" min="0" step="0.01">
+            </div>
+            <div class="form-actions">
+              <button type="submit" id="debt-submit-btn" class="btn btn-primary" style="flex:1;">Tambah Hutang</button>
+              <button type="button" id="debt-cancel-edit-btn" class="btn btn-secondary btn-sm" data-action="cancel-edit-debt" hidden>Batal</button>
+            </div>
+          </form>
+        </div>
+        <div class="card">
+          <h3>Senarai Hutang</h3>
+          <div id="debt-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= MODULE G: ASSETS & NET WORTH ================= -->
+    <section id="section-assets" hidden>
+      <div class="section-heading">
+        <h2>Aset</h2>
+        <p class="text-secondary">Jejak simpanan, ASB, saham dan aset lain supaya kekayaan bersih sebenar dapat dikira.</p>
+      </div>
+
+      <div class="card stat-tile">
+        <div class="stat-label">Jumlah Nilai Aset</div>
+        <div class="stat-value" id="asset-total"></div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:20px;">
+        <div class="card">
+          <h3>Tambah Aset</h3>
+          <form id="asset-form">
+            <div class="field">
+              <label for="assetName">Nama Aset</label>
+              <input type="text" id="assetName" placeholder="cth: Simpanan Maybank">
+              <span id="assetName-error" class="field-error"></span>
+            </div>
+            <div class="field">
+              <label for="assetCategory">Kategori</label>
+              <select id="assetCategory"></select>
+            </div>
+            <div class="field">
+              <label for="assetValue">Nilai Semasa (RM)</label>
+              <input type="number" id="assetValue" min="0" step="0.01">
+              <span id="assetValue-error" class="field-error"></span>
+            </div>
+            <div class="field">
+              <label for="assetNote">Nota (pilihan)</label>
+              <input type="text" id="assetNote" placeholder="cth: akaun kecemasan">
+            </div>
+            <div class="form-actions">
+              <button type="submit" id="asset-submit-btn" class="btn btn-primary" style="flex:1;">Tambah Aset</button>
+              <button type="button" id="asset-cancel-edit-btn" class="btn btn-secondary btn-sm" hidden>Batal</button>
+            </div>
+          </form>
+        </div>
+        <div class="card">
+          <h3>Senarai Aset</h3>
+          <div id="asset-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= MODULE D: EMERGENCY FUND ================= -->
+    <section id="section-emergency" hidden>
+      <div class="section-heading">
+        <h2>Kalkulator Tabung Kecemasan</h2>
+        <p class="text-secondary">Sasaran berdasarkan purata perbelanjaan bulanan anda.</p>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card" style="text-align:center;">
+          <h3>Progress Tabung Kecemasan</h3>
+          <div id="emergency-no-data" class="banner banner-neutral" hidden>
+            Tiada data perbelanjaan lagi — masukkan perbelanjaan di tab Aliran Tunai untuk mengira sasaran.
+          </div>
+          <div class="ring-wrap">
+            <canvas id="emergency-ring-chart"></canvas>
+            <div class="ring-center">
+              <div class="ring-value" id="emergency-ring-percent"></div>
+              <div class="ring-caption" id="emergency-ring-caption"></div>
+            </div>
+          </div>
+          <div class="grid grid-2" style="margin-top:16px;text-align:left;">
+            <div class="row-between"><span class="text-secondary">Purata Perbelanjaan/Bulan</span><strong id="emergency-avg-expense"></strong></div>
+            <div class="row-between"><span class="text-secondary">Sasaran Tabung</span><strong id="emergency-target"></strong></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Tetapan</h3>
+          <form id="emergency-form">
+            <div class="field">
+              <label>Sasaran</label>
+              <div class="radio-group">
+                <label><input type="radio" name="targetMonths" value="3" id="emergencyTarget3"> 3 bulan</label>
+                <label><input type="radio" name="targetMonths" value="6" id="emergencyTarget6"> 6 bulan</label>
+              </div>
+            </div>
+            <div class="field">
+              <label for="currentSavings">Simpanan Kecemasan Semasa (RM)</label>
+              <input type="number" id="currentSavings" min="0" step="0.01">
+              <span id="currentSavings-error" class="field-error"></span>
+            </div>
+            <button type="submit" id="emergency-save-btn" class="btn btn-primary btn-block">Simpan</button>
+          </form>
+          <hr style="border-color:var(--gridline);margin:16px 0;">
+          <div class="row-between">
+            <span class="text-secondary">Tahan Berapa Lama Jika Kecemasan</span>
+            <strong id="emergency-runway"></strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= MODULE F: FINANCIAL GOALS ================= -->
+    <section id="section-goals" hidden>
+      <div class="section-heading">
+        <h2>Matlamat Kewangan</h2>
+        <p class="text-secondary">Jejak simpanan ke arah matlamat kewangan anda — deposit rumah, pelaburan, umrah, dan lain-lain.</p>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <h3 id="goal-form-title">Tambah Matlamat</h3>
+          <form id="goal-form">
+            <div class="field">
+              <label for="goalName">Nama Matlamat</label>
+              <input type="text" id="goalName" placeholder="cth: Deposit Rumah">
+              <span id="goalName-error" class="field-error"></span>
+            </div>
+            <div class="field-row field-row-2">
+              <div class="field">
+                <label for="goalTargetAmount">Sasaran (RM)</label>
+                <input type="number" id="goalTargetAmount" min="0" step="0.01">
+                <span id="goalTargetAmount-error" class="field-error"></span>
+              </div>
+              <div class="field">
+                <label for="goalCurrentAmount">Sudah Simpan (RM)</label>
+                <input type="number" id="goalCurrentAmount" min="0" step="0.01" value="0">
+                <span id="goalCurrentAmount-error" class="field-error"></span>
+              </div>
+            </div>
+            <div class="field">
+              <label for="goalTargetDate">Tarikh Sasaran (pilihan)</label>
+              <input type="date" id="goalTargetDate">
+            </div>
+            <div class="form-actions">
+              <button type="submit" id="goal-submit-btn" class="btn btn-primary" style="flex:1;">Tambah Matlamat</button>
+              <button type="button" id="goal-cancel-edit-btn" class="btn btn-secondary btn-sm" hidden>Batal</button>
+            </div>
+          </form>
+        </div>
+        <div class="card">
+          <h3>Senarai Matlamat</h3>
+          <div id="goal-list" class="stack"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= MODULE E: ANNUAL FEE WAIVER PROJECTION ================= -->
+    <section id="section-waiver" hidden>
+      <div class="section-heading">
+        <h2>Unjuran Waiver Yuran Tahunan 2026</h2>
+        <p class="text-secondary">Berdasarkan purata perbelanjaan runcit bulanan (Petrol, Makanan, Dining, Grab) × 12.</p>
+      </div>
+
+      <div id="waiver-no-data" class="banner banner-neutral" hidden>
+        Tiada data perbelanjaan runcit lagi — masukkan Petrol/Makanan/Dining/Grab di tab Aliran Tunai untuk melihat unjuran.
+      </div>
+
+      <div class="card">
+        <div class="row-between">
+          <h3 style="margin:0;">Status Waiver — Kad <span id="waiver-card-type-label"></span></h3>
+          <span id="waiver-status-pill" class="pill"></span>
+        </div>
+
+        <div class="grid grid-2" style="margin-top:16px;">
+          <div class="row-between"><span class="text-secondary">Purata Runcit/Bulan</span><strong id="waiver-avg-monthly-retail"></strong></div>
+          <div class="row-between"><span class="text-secondary">Unjuran Tahunan</span><strong id="waiver-projected-annual"></strong></div>
+          <div class="row-between"><span class="text-secondary">Sasaran Waiver</span><strong id="waiver-threshold"></strong></div>
+          <div class="row-between"><span class="text-secondary">Yuran Tahunan Kad</span><strong id="waiver-fee-amount"></strong></div>
+        </div>
+
+        <div id="waiver-shortfall-row" class="banner banner-warning" style="margin-top:16px;" hidden>
+          Anda perlu berbelanja <strong id="waiver-shortfall"></strong> lagi setahun untuk layak mendapat waiver.
+        </div>
+
+        <div class="chart-box" style="margin-top:16px;">
+          <canvas id="waiver-chart"></canvas>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="bottom-nav">
+    <a href="#overview"><span class="bottom-nav-icon">🏠</span><span>Utama</span></a>
+    <a href="#cashflow"><span class="bottom-nav-icon">💰</span><span>Tunai</span></a>
+    <a href="#debts"><span class="bottom-nav-icon">📊</span><span>DTI</span></a>
+    <a href="#assets"><span class="bottom-nav-icon">🏦</span><span>Aset</span></a>
+    <button id="bottom-nav-more-btn" type="button" aria-haspopup="true" aria-expanded="false">
+      <span class="bottom-nav-icon">⋯</span><span>Lagi</span>
+    </button>
+  </nav>
+
+  <div id="bottom-nav-sheet" class="bottom-nav-sheet" hidden>
+    <div class="card">
+      <a href="#emergency" class="data-row"><span class="bottom-nav-icon">🛟</span><span class="data-title">Tabung Kecemasan</span></a>
+      <a href="#goals" class="data-row"><span class="bottom-nav-icon">🎯</span><span class="data-title">Matlamat Kewangan</span></a>
+      <a href="#uob" class="data-row"><span class="bottom-nav-icon">💳</span><span class="data-title">Kad UOB ONE</span></a>
+      <a href="#waiver" class="data-row"><span class="bottom-nav-icon">🎁</span><span class="data-title">Waiver Yuran</span></a>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script type="module" src="/js/main.js"></script>
+</body>
+</html>
