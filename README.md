@@ -1,58 +1,231 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# afiezfinancial (i-financial)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Papan pemuka kewangan peribadi — backend API Laravel + frontend statik vanilla JS/CSS (tiada build step, tiada framework frontend). Dibina untuk kegunaan sendiri (single-user).
 
-## About Laravel
+## Ciri-ciri
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Ringkasan (Overview)** — pandangan holistik: baki bersih, jumlah hutang, kekayaan bersih, DTI, tabung kecemasan, cadangan (insights), nasihat AI (Gemini)
+- **Aliran Tunai Bulanan** — rekod pendapatan/perbelanjaan ikut kategori, transaksi berulang, had perbelanjaan (budget) per kategori
+- **Penjejak Hutang & DTI** — nisbah debt-to-income dengan meter kesihatan kewangan
+- **Kalkulator Kad UOB ONE** — enjin faedah dua fasa, penalti lewat bayar, unjuran waiver yuran tahunan
+- **Aset & Kekayaan Bersih** — jejak simpanan/ASB/saham/hartanah
+- **Tabung Kecemasan** dan **Matlamat Kewangan**
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Stack Teknikal
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **Backend:** Laravel 12, PHP 8.3+, Sanctum (session auth), Pest (testing)
+- **Frontend:** Vanilla JS (ES modules) + CSS dilayan terus dari `public/` — tiada npm/Vite/build step
+- **DB:** PostgreSQL (production — lihat Setup Production), SQLite in-memory (testing — lihat `phpunit.xml`)
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Setup Pembangunan Tempatan
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+php artisan serve
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Buka `http://localhost:8000`.
 
-## Contributing
+## Ujian
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+composer test          # Pest — semua test Feature
+vendor/bin/pint --test # semak gaya kod (tanpa ubah fail)
+vendor/bin/pint        # auto-fix gaya kod
+```
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Setup Production (VPS)
 
-## Security Vulnerabilities
+Bahagian ni untuk **setup pertama kali** sahaja di server production. Selepas setup awal siap, kemaskini seterusnya (push ke `main`) akan **automatik** dijalankan oleh CI/CD (lihat bahagian bawah) — tak perlu ulang langkah manual ni lagi.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Keperluan di VPS
 
-## License
+- PHP 8.4+ dengan extension: `mbstring`, `dom`, `fileinfo`, `bcmath`, `pdo_pgsql`, `sqlite3` (untuk sesi tempatan jika perlu)
+- Composer
+- PostgreSQL
+- Nginx
+- Git
+- Node **tidak diperlukan** — frontend tiada build step
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### 1. Clone repo
+
+```bash
+cd /var/www
+git clone https://github.com/afiez97/i-financial.git
+cd i-financial
+```
+
+### 2. Pasang dependencies
+
+```bash
+composer install --no-dev --optimize-autoloader
+```
+
+### 3. Cipta Database PostgreSQL
+
+Log masuk sebagai user `postgres`:
+
+```bash
+sudo -u postgres psql
+```
+
+Di dalam prompt `psql`, cipta user + database khusus untuk app ni:
+
+```sql
+CREATE USER afiezfinancial WITH ENCRYPTED PASSWORD 'GANTI_DENGAN_PASSWORD_KUAT';
+CREATE DATABASE afiezfinancial OWNER afiezfinancial;
+\c afiezfinancial
+GRANT ALL ON SCHEMA public TO afiezfinancial;
+\q
+```
+
+(`GRANT ALL ON SCHEMA public` perlu untuk PostgreSQL 15+ — tanpa ni migration akan gagal dengan ralat "permission denied for schema public".)
+
+Simpan nama database, username, dan password ni — akan digunakan dalam `.env` di langkah seterusnya (`DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`).
+
+> Kalau PostgreSQL dah sedia dipasang & database khusus dah wujud (cth. dikongsi dengan app lain), langkah ni boleh dilangkau — terus ke langkah 4.
+
+### 4. Konfigurasi `.env`
+
+`.env` **tidak** datang dari git (sengaja — ia mengandungi rahsia production). Cipta secara manual:
+
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+Edit `.env` dan isikan nilai sebenar untuk production:
+
+```
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://domain-anda.com
+
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=afiezfinancial
+DB_USERNAME=afiezfinancial
+DB_PASSWORD=...
+
+SESSION_DRIVER=database
+
+GEMINI_API_KEY=...          # untuk ciri Nasihat AI (pilihan — app tetap jalan tanpa ini)
+GEMINI_MODEL=gemini-2.5-flash
+
+MAIL_MAILER=...             # untuk emel forgot-password betul-betul dihantar
+```
+
+### 5. Migration & storage
+
+```bash
+php artisan migrate --force
+php artisan storage:link
+chown -R www-data:www-data storage bootstrap/cache  # tukar www-data kepada user PHP-FPM anda jika berbeza
+chmod -R 775 storage bootstrap/cache
+```
+
+### 6. Cache production
+
+```bash
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+
+### 7. Konfigurasi Nginx
+
+Document root **mesti** ke `public/`, bukan root repo:
+
+```nginx
+server {
+    listen 80;
+    server_name domain-anda.com;
+    root /var/www/i-financial/public;
+
+    index index.php;
+
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+
+    charset utf-8;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/run/php/php8.4-fpm.sock; # sahkan path socket ni betul: `systemctl status php8.4-fpm`
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
+```
+
+Aktifkan & reload:
+
+```bash
+ln -s /etc/nginx/sites-available/i-financial /etc/nginx/sites-enabled/
+nginx -t && systemctl reload nginx
+```
+
+### 8. SSL (disyorkan)
+
+```bash
+certbot --nginx -d domain-anda.com
+```
+
+Setup pertama kali **selesai**. App sepatutnya boleh diakses sekarang.
+
+---
+
+## CI/CD (kemaskini seterusnya — automatik)
+
+Selepas setup awal di atas siap, setiap `git push` ke `main` akan automatik:
+
+1. **Test** — jalan Pest + semak Pint (`.github/workflows/ci-cd.yml`)
+2. **Deploy** — jika test lulus, SSH ke server, `git pull`, `composer install`, `migrate --force`, cache config/route/view, reload PHP-FPM
+
+### Secret yang diperlukan di GitHub (Settings → Secrets and variables → Actions)
+
+| Secret | Nilai |
+|---|---|
+| `SSH_HOST` | IP/domain VPS |
+| `SSH_USER` | `root` (atau user deploy) |
+| `SSH_PRIVATE_KEY` | Private key SSH khusus untuk deploy (bukan key peribadi) |
+
+### Deploy manual (fallback, jika CI/CD tak boleh jalan)
+
+```bash
+cd /var/www/i-financial
+php artisan down
+git pull origin main
+composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+php artisan config:cache && php artisan route:cache && php artisan view:cache
+systemctl reload php8.4-fpm
+php artisan up
+```
+
+### Rollback
+
+```bash
+cd /var/www/i-financial
+php artisan down
+git log --oneline -5        # cari commit hash sebelum masalah
+git reset --hard <commit-hash>
+composer install --no-dev --optimize-autoloader
+php artisan migrate --force  # jika migration baru perlu di-rollback, guna `migrate:rollback` dahulu
+php artisan config:cache && php artisan route:cache && php artisan view:cache
+systemctl reload php8.4-fpm
+php artisan up
+```
