@@ -48,26 +48,30 @@ class CardProfile extends Model
     }
 
     /**
-     * The statement, due, and cycle-end dates for a given billing cycle.
-     * Since the profile only stores day-of-month presets (not full calendar
-     * dates), the due date is assumed to fall in the same month as the
-     * statement when due_day is later in the month, otherwise the next month
-     * (matching the app's default: statement 17th, due 6th of the following month).
+     * The cycle-start, due, and statement dates for a given (month, year) —
+     * `month`/`year` identify the cycle by the date the STATEMENT ITSELF is
+     * issued (matching what's printed on the real bank statement), so the
+     * interest being reported covers the cycle that just closed: from the
+     * previous statement date up to this one. The due date falls wherever it
+     * lands within that window (same month as cycle-start when due_day is
+     * later in the month than statement_day, otherwise the same month as the
+     * statement — matching the app's default: statement 17th, due 6th, so a
+     * cycle from 17 Jul to 17 Aug has its due date on 6 Aug).
      *
-     * @return array{0: Carbon, 1: Carbon, 2: Carbon} [statementDate, dueDate, cycleEnd]
+     * @return array{0: Carbon, 1: Carbon, 2: Carbon} [cycleStart, dueDate, statementDate]
      */
     public function cycleDates(int $month, int $year): array
     {
         $monthStart = Carbon::create($year, $month, 1);
         $statementDate = $monthStart->copy()->day(min($this->statement_day, $monthStart->daysInMonth));
-        $cycleEnd = $statementDate->copy()->addMonthNoOverflow();
+        $cycleStart = $statementDate->copy()->subMonthNoOverflow();
 
         $dueDate = $this->due_day > $this->statement_day
-            ? $statementDate->copy()
-            : $statementDate->copy()->addMonthNoOverflow();
+            ? $cycleStart->copy()
+            : $statementDate->copy();
         $dueDate->day(min($this->due_day, $dueDate->daysInMonth));
 
-        return [$statementDate, $dueDate, $cycleEnd];
+        return [$cycleStart, $dueDate, $statementDate];
     }
 
     /**
@@ -78,11 +82,11 @@ class CardProfile extends Model
      */
     public function estimateRetailInterest(float $balance, float $paymentAmount, int $month, int $year, ?Carbon $paymentDate): float
     {
-        [$statementDate, , $cycleEnd] = $this->cycleDates($month, $year);
-        $effectivePaymentDate = $paymentDate ? $paymentDate->copy()->max($statementDate)->min($cycleEnd) : $cycleEnd->copy();
+        [$cycleStart, , $statementDate] = $this->cycleDates($month, $year);
+        $effectivePaymentDate = $paymentDate ? $paymentDate->copy()->max($cycleStart)->min($statementDate) : $statementDate->copy();
 
-        $phase1Days = $statementDate->diffInDays($effectivePaymentDate);
-        $phase2Days = $effectivePaymentDate->diffInDays($cycleEnd);
+        $phase1Days = $cycleStart->diffInDays($effectivePaymentDate);
+        $phase2Days = $effectivePaymentDate->diffInDays($statementDate);
 
         $dailyRate = $this->annualPercent() / 100 / 365;
         $remainingBalance = max($balance - $paymentAmount, 0);

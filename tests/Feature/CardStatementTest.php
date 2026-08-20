@@ -26,7 +26,7 @@ test('a user can create, list, update and delete card statements', function () {
         'year' => 2026,
         'balance' => 5500,
         'payment_amount' => 5000,
-        'payment_date' => '2026-09-01',
+        'payment_date' => '2026-08-01',
         'payer_name' => 'Afiez',
         'note' => 'Bayaran biasa',
     ]);
@@ -42,7 +42,7 @@ test('a user can create, list, update and delete card statements', function () {
         'year' => 2026,
         'balance' => 5500,
         'payment_amount' => 5500,
-        'payment_date' => '2026-09-01',
+        'payment_date' => '2026-08-01',
         'payer_name' => 'Afiez',
         'note' => 'Settle penuh',
         'actual_retail_interest' => 12.34,
@@ -59,13 +59,14 @@ test('a late payment triggers the 1% late-payment interest estimate', function (
     $user = User::factory()->create();
     createCardProfileForStatementTest($user);
 
-    // Cycle for month=8/year=2026: statement 2026-08-17, due 2026-09-06.
+    // Cycle for month=8/year=2026 (statement dated 17 Aug): cycle 2026-07-17 to
+    // 2026-08-17, due 2026-08-06.
     $response = $this->actingAs($user)->postJson('/api/card-statements', [
         'month' => 8,
         'year' => 2026,
         'balance' => 5500,
         'payment_amount' => 5500,
-        'payment_date' => '2026-09-10',
+        'payment_date' => '2026-08-10',
     ]);
 
     $response->assertCreated()->assertJsonPath('data.estimated_late_payment_interest', 55);
@@ -80,7 +81,7 @@ test('an on-time payment has no late-payment interest estimate', function () {
         'year' => 2026,
         'balance' => 5500,
         'payment_amount' => 5500,
-        'payment_date' => '2026-09-01',
+        'payment_date' => '2026-08-01',
     ]);
 
     $response->assertCreated()->assertJsonPath('data.estimated_late_payment_interest', 0);
