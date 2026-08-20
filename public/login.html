@@ -4,76 +4,99 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Log Masuk — Kewangan Peribadi</title>
-<link rel="stylesheet" href="/css/base.css">
-<link rel="stylesheet" href="/css/components.css">
-<link rel="stylesheet" href="/css/auth.css">
+<link rel="stylesheet" href="/css/login.css">
 </head>
 <body>
-<div class="auth-page">
-  <div class="auth-card">
-    <div class="auth-brand">
-      <div class="auth-logo">💳</div>
-      <h1>Kewangan Peribadi</h1>
-      <p>Log masuk untuk teruskan</p>
+<div class="lock-shell" id="lock-shell" data-layout="split" data-phase="idle" data-labels="on">
+
+  <header class="lock-topbar">
+    <div class="lock-brand">
+      <span class="lock-brand-name">KEWANGAN PERIBADI</span>
+      <span class="lock-brand-sub">Akses Papan Pemuka</span>
+    </div>
+    <div class="lock-layout-switch">
+      <span class="lock-layout-label">Susun atur</span>
+      <div class="lock-tabs" role="group" aria-label="Susun atur">
+        <button type="button" class="lock-tab" data-layout-btn="split">Belah</button>
+        <button type="button" class="lock-tab" data-layout-btn="stack">Tindan</button>
+        <button type="button" class="lock-tab" data-layout-btn="poster">Poster</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="lock-main">
+
+    <div class="lock-stage-pane">
+      <key-lock-stage></key-lock-stage>
+
+      <div class="lock-stage-tags">
+        <span class="lock-tag">Padlock berkunci</span>
+        <span class="lock-tag lock-tag-glow" id="phase-tag">Kunci belum masuk</span>
+      </div>
+
+      <div class="lock-stage-toggle">
+        <button type="button" class="lock-label-btn" id="label-toggle-btn">Sembunyi label</button>
+      </div>
+
+      <div class="lock-legend" id="lock-legend">
+        <div class="lock-legend-title">Mekanisme</div>
+        <div class="lock-legend-list">
+          <div class="lock-legend-item"><span>01</span><span>Setiap aksara menolak kunci masuk ke dalam keyway</span></div>
+          <div class="lock-legend-item"><span>02</span><span>Plug berpusing bila kunci sah</span></div>
+          <div class="lock-legend-item"><span>03</span><span>Cam mengangkat latch hook dan shackle terbebas</span></div>
+        </div>
+        <div class="lock-legend-note">Badan lut cahaya — bilah kunci, cam dan latch hook nampak dari luar.</div>
+      </div>
     </div>
 
-    <div id="auth-error" class="auth-error" hidden></div>
+    <div class="lock-form-pane">
+      <div class="lock-form-inner">
+        <div class="lock-kicker">Log Masuk</div>
+        <h1 class="lock-heading">Buka kunci<br>papan pemuka anda.</h1>
+        <div class="lock-rule"></div>
 
-    <form id="login-form">
-      <div class="field">
-        <label for="email">E-mel</label>
-        <input type="email" id="email" required autocomplete="username">
-        <span id="email-error" class="field-error"></span>
-      </div>
-      <div class="field">
-        <label for="password">Kata Laluan</label>
-        <input type="password" id="password" required autocomplete="current-password">
-        <span id="password-error" class="field-error"></span>
-      </div>
-      <button type="submit" id="login-btn" class="btn btn-primary btn-block">Log Masuk</button>
-    </form>
+        <div id="auth-error" class="lock-message" hidden></div>
 
-    <p class="auth-footer"><a href="/forgot-password.html">Lupa kata laluan?</a></p>
-    <p class="auth-footer">Belum ada akaun? <a href="/register.html">Daftar di sini</a></p>
+        <form id="login-form" novalidate>
+          <div class="lock-field">
+            <label for="kl-email">E-mel</label>
+            <input id="kl-email" type="email" autocomplete="username" required placeholder="nama@contoh.my">
+            <span class="lock-field-error" id="email-error"></span>
+          </div>
+
+          <div class="lock-field">
+            <label for="kl-pass">Kata Laluan</label>
+            <input id="kl-pass" type="password" autocomplete="current-password" required placeholder="••••••••">
+            <span class="lock-field-error" id="password-error"></span>
+            <div class="lock-meter">
+              <div class="lock-meter-track"><div class="lock-meter-fill" id="meter-fill"></div></div>
+              <span class="lock-meter-label" id="meter-label">0 aksara ditaip</span>
+            </div>
+          </div>
+
+          <div class="lock-row lock-row-tight">
+            <label class="lock-check">
+              <input type="checkbox" id="kl-remember" checked>
+              Ingat e-mel saya
+            </label>
+            <a href="/forgot-password.html">Lupa kata laluan?</a>
+          </div>
+
+          <button type="submit" class="lock-cta" id="login-btn">Log Masuk</button>
+        </form>
+
+        <div class="lock-divider"></div>
+
+        <div class="lock-row">
+          <span class="lock-footnote">Belum ada akaun? <a href="/register.html">Daftar akaun baru</a></span>
+          <button type="button" class="lock-reset-btn" id="reset-btn">Set semula kunci</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
-<script type="module">
-import { login, redirectIfAuthenticated } from '/js/auth.js';
-import { ApiError } from '/js/api.js';
-
-redirectIfAuthenticated();
-
-const form = document.getElementById('login-form');
-const errorBox = document.getElementById('auth-error');
-
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  errorBox.hidden = true;
-  document.querySelectorAll('.field-error').forEach((el) => (el.textContent = ''));
-
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value;
-  const btn = document.getElementById('login-btn');
-  btn.disabled = true;
-
-  try {
-    await login(email, password);
-    window.location.href = '/index.html';
-  } catch (err) {
-    if (err instanceof ApiError && err.status === 422) {
-      for (const [field, messages] of Object.entries(err.errors)) {
-        const el = document.getElementById(`${field}-error`);
-        if (el) el.textContent = messages[0];
-      }
-    } else {
-      errorBox.textContent = (err instanceof ApiError ? err.message : null) || 'Log masuk gagal. Sila cuba lagi.';
-      errorBox.hidden = false;
-    }
-  } finally {
-    btn.disabled = false;
-  }
-});
-</script>
+<script type="module" src="/js/login.js"></script>
 </body>
 </html>
