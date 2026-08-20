@@ -25,6 +25,11 @@ class User extends Authenticatable
         return $this->hasOne(CardProfile::class);
     }
 
+    public function cardStatements(): HasMany
+    {
+        return $this->hasMany(CardStatement::class);
+    }
+
     public function cashFlowEntries(): HasMany
     {
         return $this->hasMany(CashFlowEntry::class);

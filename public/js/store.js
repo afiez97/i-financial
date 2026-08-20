@@ -21,6 +21,7 @@ const state = {
   assets: [],
   budgets: [],
   recurringTransactions: [],
+  cardStatements: [],
 };
 
 export const store = {
@@ -138,6 +139,22 @@ export const store = {
   removeRecurringTransaction(id) {
     state.recurringTransactions = state.recurringTransactions.filter((r) => r.id !== id);
     emit('recurringTransactions:changed', state.recurringTransactions);
+  },
+  setCardStatements(list) {
+    state.cardStatements = list;
+    emit('cardStatements:changed', state.cardStatements);
+  },
+  addCardStatement(statement) {
+    state.cardStatements = [...state.cardStatements, statement];
+    emit('cardStatements:changed', state.cardStatements);
+  },
+  replaceCardStatement(statement) {
+    state.cardStatements = state.cardStatements.map((s) => (s.id === statement.id ? statement : s));
+    emit('cardStatements:changed', state.cardStatements);
+  },
+  removeCardStatement(id) {
+    state.cardStatements = state.cardStatements.filter((s) => s.id !== id);
+    emit('cardStatements:changed', state.cardStatements);
   },
 };
 

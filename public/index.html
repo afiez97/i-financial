@@ -363,6 +363,68 @@
           </div>
         </div>
       </div>
+
+      <div class="card" style="margin-top:20px;">
+        <h3>Rekod Penyata Bulanan</h3>
+        <p class="text-secondary" style="margin-top:-8px;font-size:13px;">Anggaran faedah dikira automatik dari baki + kadar kad. Isi "faedah sebenar" bila dah dapat penyata bank untuk banding.</p>
+        <div id="card-statement-empty" class="data-empty" hidden>Belum ada rekod penyata.</div>
+        <div id="card-statement-list" class="data-list"></div>
+        <details style="margin-top:14px;">
+          <summary style="cursor:pointer;font-weight:600;font-size:13px;">Tambah / Kemaskini Rekod</summary>
+          <form id="card-statement-form" style="margin-top:12px;">
+            <div class="field-row field-row-2">
+              <div class="field">
+                <label for="csMonth">Bulan</label>
+                <select id="csMonth" required></select>
+              </div>
+              <div class="field">
+                <label for="csYear">Tahun</label>
+                <input type="number" id="csYear" min="2000" max="2100" required>
+              </div>
+            </div>
+            <div class="field-row field-row-2">
+              <div class="field">
+                <label for="csBalance">Baki Penyata (RM)</label>
+                <input type="number" id="csBalance" min="0" step="0.01" required>
+                <span id="csBalance-error" class="field-error"></span>
+              </div>
+              <div class="field">
+                <label for="csPaymentAmount">Jumlah Dibayar (RM)</label>
+                <input type="number" id="csPaymentAmount" min="0" step="0.01" required>
+                <span id="csPaymentAmount-error" class="field-error"></span>
+              </div>
+            </div>
+            <div class="field-row field-row-2">
+              <div class="field">
+                <label for="csPaymentDate">Tarikh Bayaran Dibuat</label>
+                <input type="date" id="csPaymentDate">
+              </div>
+              <div class="field">
+                <label for="csPayerName">Dibayar Oleh</label>
+                <input type="text" id="csPayerName" maxlength="100" placeholder="cth. Afiez">
+              </div>
+            </div>
+            <div class="field">
+              <label for="csNote">Nota</label>
+              <textarea id="csNote" maxlength="500" rows="2"></textarea>
+            </div>
+            <div class="field-row field-row-2">
+              <div class="field">
+                <label for="csActualRetailInterest">Faedah Runcit Sebenar (RM, jika dah tahu)</label>
+                <input type="number" id="csActualRetailInterest" min="0" step="0.01">
+              </div>
+              <div class="field">
+                <label for="csActualLatePaymentInterest">Faedah Lewat Bayar Sebenar (RM, jika dah tahu)</label>
+                <input type="number" id="csActualLatePaymentInterest" min="0" step="0.01">
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary btn-block" id="card-statement-submit-btn">Simpan Rekod</button>
+              <button type="button" class="btn btn-secondary btn-block" id="card-statement-cancel-edit-btn" hidden>Batal</button>
+            </div>
+          </form>
+        </details>
+      </div>
     </section>
 
     <!-- ================= MODULE B: MONTHLY CASH FLOW ================= -->

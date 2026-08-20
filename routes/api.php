@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AssetController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BudgetController;
 use App\Http\Controllers\Api\CardProfileController;
+use App\Http\Controllers\Api\CardStatementController;
 use App\Http\Controllers\Api\CashFlowEntryController;
 use App\Http\Controllers\Api\DebtController;
 use App\Http\Controllers\Api\EmergencyFundController;
@@ -23,6 +24,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/card-profile', [CardProfileController::class, 'show']);
     Route::put('/card-profile', [CardProfileController::class, 'update']);
+
+    Route::apiResource('card-statements', CardStatementController::class)
+        ->only(['index', 'store', 'update', 'destroy'])
+        ->parameters(['card-statements' => 'card_statement']);
 
     Route::get('/emergency-fund', [EmergencyFundController::class, 'show']);
     Route::put('/emergency-fund', [EmergencyFundController::class, 'update']);

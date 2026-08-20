@@ -11,6 +11,7 @@ import { initAnnualFeeWaiver } from './modules/annualFeeWaiver.js';
 import { initFinancialGoals } from './modules/financialGoals.js';
 import { initAssets } from './modules/assets.js';
 import { initBudget } from './modules/budget.js';
+import { initCardStatements } from './modules/cardStatements.js';
 import { initThemeToggle } from './theme.js';
 
 function showToast(message) {
@@ -27,7 +28,7 @@ async function bootstrap() {
   store.setUser(user);
   document.getElementById('app-user-email').textContent = user.email;
 
-  const [cardProfile, cashFlowEntries, debts, emergencyFund, financialGoals, assets, budgets, recurringTransactions] = await Promise.all([
+  const [cardProfile, cashFlowEntries, debts, emergencyFund, financialGoals, assets, budgets, recurringTransactions, cardStatements] = await Promise.all([
     api.get('/card-profile').catch(() => null),
     api.get('/cash-flow-entries').catch(() => []),
     api.get('/debts').catch(() => []),
@@ -36,6 +37,7 @@ async function bootstrap() {
     api.get('/assets').catch(() => []),
     api.get('/budgets').catch(() => []),
     api.get('/recurring-transactions').catch(() => []),
+    api.get('/card-statements').catch(() => []),
   ]);
 
   store.setCardProfile(cardProfile);
@@ -46,6 +48,7 @@ async function bootstrap() {
   store.setAssets(assets ?? []);
   store.setBudgets(budgets ?? []);
   store.setRecurringTransactions(recurringTransactions ?? []);
+  store.setCardStatements(cardStatements ?? []);
 
   initNav();
   initThemeToggle();
@@ -58,6 +61,7 @@ async function bootstrap() {
   initFinancialGoals();
   initAssets();
   initBudget();
+  initCardStatements();
 
   document.getElementById('logout-btn').addEventListener('click', logout);
   window.addEventListener('toast', (e) => showToast(e.detail));
