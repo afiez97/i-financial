@@ -13,6 +13,7 @@ import { initAssets } from './modules/assets.js';
 import { initBudget } from './modules/budget.js';
 import { initCardStatements } from './modules/cardStatements.js';
 import { initThemeToggle } from './theme.js';
+import { initPasskeyPrompt } from './passkeyPrompt.js';
 
 function showToast(message) {
   const toast = document.getElementById('toast');
@@ -27,6 +28,7 @@ async function bootstrap() {
   if (!user) return;
   store.setUser(user);
   document.getElementById('app-user-email').textContent = user.email;
+  initPasskeyPrompt(user);
 
   const [cardProfile, cashFlowEntries, debts, emergencyFund, financialGoals, assets, budgets, recurringTransactions, cardStatements] = await Promise.all([
     api.get('/card-profile').catch(() => null),

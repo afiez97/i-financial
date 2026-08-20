@@ -30,7 +30,14 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Laravel Passkeys' routes live outside /api/* (they need the "web"
+        // middleware group's session handling), but the frontend still talks
+        // to them over fetch/JSON just like the rest of the API — without
+        // this they'd render an HTML redirect-to-login on auth failure
+        // instead of a JSON 401.
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
+            fn (Request $request) => $request->is('api/*')
+                || $request->is('passkeys/*')
+                || $request->is('user/passkeys*'),
         );
     })->create();

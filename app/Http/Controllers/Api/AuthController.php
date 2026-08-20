@@ -27,6 +27,7 @@ class AuthController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
+        $request->session()->put('auth.password_confirmed_at', now()->unix());
 
         return response()->json(['data' => $user], 201);
     }
@@ -35,6 +36,11 @@ class AuthController extends Controller
     {
         $request->authenticate();
         $request->session()->regenerate();
+
+        // Having just verified the password, treat it as confirmed for this
+        // session so the user can enable a passkey immediately afterwards
+        // without Laravel's password.confirm middleware asking for it again.
+        $request->session()->put('auth.password_confirmed_at', now()->unix());
 
         return response()->json(['data' => Auth::user()]);
     }
@@ -50,7 +56,12 @@ class AuthController extends Controller
 
     public function user(Request $request)
     {
-        return response()->json(['data' => $request->user()]);
+        $user = $request->user();
+
+        return response()->json(['data' => [
+            ...$user->toArray(),
+            'has_passkeys' => $user->hasPasskeysEnabled(),
+        ]]);
     }
 
     public function forgotPassword(ForgotPasswordRequest $request)

@@ -1,5 +1,6 @@
 import { login, redirectIfAuthenticated } from './auth.js';
 import { ApiError } from './api.js';
+import { Passkeys } from 'https://cdn.jsdelivr.net/npm/@laravel/passkeys@0.4.0/+esm';
 import './key-lock.js';
 
 const REMEMBER_KEY = 'afiezfinancial:rememberedEmail';
@@ -16,6 +17,7 @@ const emailInput = document.getElementById('kl-email');
 const passInput = document.getElementById('kl-pass');
 const rememberInput = document.getElementById('kl-remember');
 const submitBtn = document.getElementById('login-btn');
+const faceIdBtn = document.getElementById('faceid-btn');
 const resetBtn = document.getElementById('reset-btn');
 const labelToggleBtn = document.getElementById('label-toggle-btn');
 const phaseTag = document.getElementById('phase-tag');
@@ -83,6 +85,7 @@ function updateMeter() {
 setLayout('split');
 setPhase('idle');
 updateMeter();
+if (Passkeys.isSupported()) faceIdBtn.hidden = false;
 
 layoutButtons.forEach((btn) => {
   btn.addEventListener('click', () => setLayout(btn.dataset.layoutBtn));
@@ -143,6 +146,7 @@ form.addEventListener('submit', async (e) => {
   updateCta();
   emailInput.disabled = true;
   passInput.disabled = true;
+  faceIdBtn.disabled = true;
 
   try {
     await login(email, password);
@@ -164,6 +168,7 @@ form.addEventListener('submit', async (e) => {
     submitting = false;
     emailInput.disabled = false;
     passInput.disabled = false;
+    faceIdBtn.disabled = false;
     setPhase('error');
     stage?.signalError?.();
     if (err instanceof ApiError && err.status === 422) {
@@ -175,5 +180,38 @@ form.addEventListener('submit', async (e) => {
       setMessage((err instanceof ApiError ? err.message : null) || 'Log masuk gagal. Sila cuba lagi.');
     }
     updateCta();
+  }
+});
+
+faceIdBtn.addEventListener('click', async () => {
+  if (submitting || phase === 'unlocking' || phase === 'success') return;
+
+  clearFieldErrors();
+  setMessage('');
+  submitting = true;
+  submitBtn.disabled = true;
+  faceIdBtn.disabled = true;
+
+  try {
+    await Passkeys.verify();
+    submitting = false;
+    setPhase('unlocking');
+    stage?.setTyping?.(1);
+    stage?.runUnlock?.();
+    unlockTimer = setTimeout(() => {
+      setPhase('success');
+      setMessage('Kunci sah. Shackle terbebas.');
+      window.location.href = '/index.html';
+    }, 2200);
+  } catch (err) {
+    submitting = false;
+    faceIdBtn.disabled = false;
+    if (err?.name === 'UserCancelledError') {
+      updateCta();
+    } else {
+      setPhase('error');
+      stage?.signalError?.();
+      setMessage('Log masuk Face ID gagal. Sila cuba log masuk dengan kata laluan.');
+    }
   }
 });
