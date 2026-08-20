@@ -26,8 +26,6 @@ class DatabaseSeeder extends Seeder
             'balance' => 5500.00,
             'statement_day' => 17,
             'due_day' => 6,
-            'payment_amount' => 5000.00,
-            'payment_day' => 11,
             'interest_rate' => 15.000,
             'rate_type' => 'annual',
         ]);

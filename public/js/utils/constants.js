@@ -24,8 +24,6 @@ export const DEFAULT_CARD_PROFILE = {
   balance: 5500,
   statementDay: 17,
   dueDay: 6,
-  paymentAmount: 5000,
-  paymentDay: 11,
   interestRate: 15,
   rateType: 'annual',
   status: 'active',

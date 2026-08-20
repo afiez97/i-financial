@@ -142,9 +142,9 @@ function renderBudgetSummary(root, budgets, entries, period) {
     `Terburuk: ${categoryLabel(worst.category)} — ${formatRM(worst.spent)} / ${formatRM(worst.limit)}`;
 }
 
-function renderInsights(root, { cashFlowEntries, selectedPeriod, debts, cardProfile, emergencyFund, budgets }) {
+function renderInsights(root, { cashFlowEntries, selectedPeriod, debts, cardProfile, cardStatements, emergencyFund, budgets }) {
   const insights = generateInsights({
-    entries: cashFlowEntries, debts, cardProfile, emergencyFund, budgets, period: selectedPeriod,
+    entries: cashFlowEntries, debts, cardProfile, cardStatements, emergencyFund, budgets, period: selectedPeriod,
   });
 
   const list = root.querySelector('#overview-insights-list');
@@ -164,7 +164,7 @@ function renderInsights(root, { cashFlowEntries, selectedPeriod, debts, cardProf
 }
 
 function render(root) {
-  const { cashFlowEntries, selectedPeriod, debts, cardProfile, emergencyFund, assets, budgets } = store.getState();
+  const { cashFlowEntries, selectedPeriod, debts, cardProfile, cardStatements, emergencyFund, assets, budgets } = store.getState();
 
   root.querySelector('#overview-period-label').textContent = `${MONTH_LABELS[selectedPeriod.month - 1]} ${selectedPeriod.year}`;
 
@@ -223,7 +223,7 @@ function render(root) {
     statusBanner.hidden = true;
   }
 
-  const state = { cashFlowEntries, selectedPeriod, debts, cardProfile, emergencyFund, budgets };
+  const state = { cashFlowEntries, selectedPeriod, debts, cardProfile, cardStatements, emergencyFund, budgets };
   renderSafeToSpend(root, state);
   renderInsights(root, state);
   renderGoalsSummary(root, store.getState().financialGoals);
@@ -259,6 +259,7 @@ export function initOverview() {
   on('debts:changed', () => render(root));
   on('emergencyFund:changed', () => render(root));
   on('cardProfile:changed', () => render(root));
+  on('cardStatements:changed', () => render(root));
   on('financialGoals:changed', () => render(root));
   on('assets:changed', () => render(root));
   on('budgets:changed', () => render(root));

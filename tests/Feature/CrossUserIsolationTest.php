@@ -35,8 +35,7 @@ test('a users card profile and emergency fund are private to them', function () 
 
     $this->actingAs($userA)->putJson('/api/card-profile', [
         'card_type' => 'platinum', 'balance' => 9999, 'statement_day' => 17, 'due_day' => 6,
-        'payment_amount' => 5000, 'payment_day' => 11, 'interest_rate' => 15, 'rate_type' => 'annual',
-        'status' => 'active',
+        'interest_rate' => 15, 'rate_type' => 'annual', 'status' => 'active',
     ])->assertOk();
 
     $this->actingAs($userB)->getJson('/api/card-profile')

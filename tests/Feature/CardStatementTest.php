@@ -12,8 +12,6 @@ function createCardProfileForStatementTest(User $user): void
         'balance' => 5500,
         'statement_day' => 17,
         'due_day' => 6,
-        'payment_amount' => 5000,
-        'payment_day' => 11,
         'interest_rate' => 15,
         'rate_type' => 'annual',
     ]);

@@ -21,8 +21,6 @@ class CardProfileUpdateRequest extends FormRequest
             'balance' => ['required', 'numeric', 'min:0'],
             'statement_day' => ['required', 'integer', 'between:1,31'],
             'due_day' => ['required', 'integer', 'between:1,31'],
-            'payment_amount' => ['required', 'numeric', 'min:0'],
-            'payment_day' => ['required', 'integer', 'between:1,31'],
             'interest_rate' => ['required', 'numeric', 'min:0'],
             'rate_type' => ['required', Rule::in(['annual', 'monthly'])],
             'status' => ['required', Rule::in(['active', 'planned_termination', 'terminated'])],
@@ -36,9 +34,7 @@ class CardProfileUpdateRequest extends FormRequest
         return [
             'statement_day.between' => 'Tarikh penyata mesti antara 1 dan 31.',
             'due_day.between' => 'Tarikh akhir bayaran mesti antara 1 dan 31.',
-            'payment_day.between' => 'Tarikh bayaran dibuat mesti antara 1 dan 31.',
             'balance.min' => 'Baki tidak boleh negatif.',
-            'payment_amount.min' => 'Jumlah bayaran tidak boleh negatif.',
             'termination_target_date.required_unless' => 'Sila masukkan tarikh sasaran.',
             'termination_note.max' => 'Nota tidak boleh lebih 500 aksara.',
         ];

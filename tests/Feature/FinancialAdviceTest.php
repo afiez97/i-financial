@@ -28,7 +28,7 @@ test('a user can get AI-generated financial advice from Gemini', function () {
     $user = User::factory()->create();
     $user->cardProfile()->create([
         'card_type' => 'classic', 'balance' => 5500, 'statement_day' => 17, 'due_day' => 6,
-        'payment_amount' => 5000, 'payment_day' => 11, 'interest_rate' => 15, 'rate_type' => 'annual', 'status' => 'active',
+        'interest_rate' => 15, 'rate_type' => 'annual', 'status' => 'active',
     ]);
 
     $response = $this->actingAs($user)->postJson('/api/financial-advice');

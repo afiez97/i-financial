@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { store, on } from '../store.js';
+import { store, on, getLatestCardStatement } from '../store.js';
 import { daysBetween, normalizeCycleDates, formatDateMY } from '../utils/dateUtils.js';
 import { formatRM, formatRMSigned, round2 } from '../utils/formatters.js';
 import { validateForm, isDayOfMonth, isNonNegativeAmount, isRequiredString } from '../utils/validators.js';
@@ -51,18 +51,34 @@ export function calculateScenarioA({ balance, annualPercent, statementDay }) {
   return { cycleDays, totalCost: round2(cycleDays * dailyRate * balance) };
 }
 
+/** Payment amount/day to simulate, sourced from the latest monthly statement
+ *  record (payment tracking now lives there, not on card_profile). Falls back
+ *  to "pay the full balance by the due date" when no record exists yet. */
+function resolvePaymentInput(cardProfile, latestStatement) {
+  if (latestStatement) {
+    return {
+      paymentAmount: Number(latestStatement.payment_amount),
+      paymentDay: latestStatement.payment_date
+        ? new Date(`${latestStatement.payment_date}T00:00:00`).getDate()
+        : Number(cardProfile.due_day),
+    };
+  }
+  return { paymentAmount: Number(cardProfile.balance), paymentDay: Number(cardProfile.due_day) };
+}
+
 /** Maps a snake_case card_profile record (as returned by the API) into
  *  the dual-phase interest calculators above, which expect camelCase. */
-export function calculateUobCostSummary(cardProfile) {
+export function calculateUobCostSummary(cardProfile, latestStatement = null) {
   const annualPercent = annualPercentFor(cardProfile.interest_rate, cardProfile.rate_type);
   const balance = Number(cardProfile.balance);
+  const { paymentAmount, paymentDay } = resolvePaymentInput(cardProfile, latestStatement);
   const scenarioB = calculateDualPhaseInterest({
     balance,
-    paymentAmount: Number(cardProfile.payment_amount),
+    paymentAmount,
     annualPercent,
     statementDay: Number(cardProfile.statement_day),
     dueDay: Number(cardProfile.due_day),
-    paymentDay: Number(cardProfile.payment_day),
+    paymentDay,
   });
   const scenarioA = calculateScenarioA({
     balance,
@@ -82,8 +98,6 @@ function readForm(root) {
     balance: Number(root.querySelector('#balance').value),
     statement_day: Number(root.querySelector('#statementDay').value),
     due_day: Number(root.querySelector('#dueDay').value),
-    payment_amount: Number(root.querySelector('#paymentAmount').value),
-    payment_day: Number(root.querySelector('#paymentDay').value),
     interest_rate: Number(interestRate),
     rate_type: rateType,
     status,
@@ -97,8 +111,6 @@ function fillForm(root, profile) {
   root.querySelector('#balance').value = profile.balance;
   root.querySelector('#statementDay').value = profile.statement_day;
   root.querySelector('#dueDay').value = profile.due_day;
-  root.querySelector('#paymentAmount').value = profile.payment_amount;
-  root.querySelector('#paymentDay').value = profile.payment_day;
   const select = root.querySelector('#interestRate');
   const match = findRateOption(profile.interest_rate, profile.rate_type) ?? RATE_OPTIONS[0];
   select.value = `${match.interestRate}|${match.rateType}`;
@@ -119,8 +131,6 @@ function validate(root, values) {
     balance: { test: () => isNonNegativeAmount(values.balance), message: 'Baki tidak boleh negatif.' },
     statementDay: { test: () => isDayOfMonth(values.statement_day), message: 'Mesti antara 1 dan 31.' },
     dueDay: { test: () => isDayOfMonth(values.due_day), message: 'Mesti antara 1 dan 31.' },
-    paymentAmount: { test: () => isNonNegativeAmount(values.payment_amount), message: 'Tidak boleh negatif.' },
-    paymentDay: { test: () => isDayOfMonth(values.payment_day), message: 'Mesti antara 1 dan 31.' },
     terminationTargetDate: {
       test: () => values.status === 'active' || isRequiredString(values.termination_target_date ?? ''),
       message: 'Sila masukkan tarikh sasaran.',
@@ -190,10 +200,12 @@ function renderChart(canvas, scenarioA, scenarioB) {
 function recompute(root) {
   const values = readForm(root);
   const annualPercent = values.rate_type === 'monthly' ? values.interest_rate * 12 : values.interest_rate;
+  const latestStatement = getLatestCardStatement(store.getState().cardStatements);
+  const { paymentAmount, paymentDay } = resolvePaymentInput(values, latestStatement);
 
   const scenarioB = calculateDualPhaseInterest({
-    balance: values.balance, paymentAmount: values.payment_amount, annualPercent,
-    statementDay: values.statement_day, dueDay: values.due_day, paymentDay: values.payment_day,
+    balance: values.balance, paymentAmount, annualPercent,
+    statementDay: values.statement_day, dueDay: values.due_day, paymentDay,
   });
   const scenarioA = calculateScenarioA({ balance: values.balance, annualPercent, statementDay: values.statement_day });
   const netSavings = round2(scenarioA.totalCost - scenarioB.totalCost);
@@ -249,8 +261,6 @@ export function initUobCalculator() {
     balance: profile.balance,
     statement_day: profile.statement_day ?? profile.statementDay,
     due_day: profile.due_day ?? profile.dueDay,
-    payment_amount: profile.payment_amount ?? profile.paymentAmount,
-    payment_day: profile.payment_day ?? profile.paymentDay,
     interest_rate: profile.interest_rate ?? profile.interestRate,
     rate_type: profile.rate_type ?? profile.rateType,
     status: profile.status,
@@ -259,7 +269,7 @@ export function initUobCalculator() {
   });
   recompute(root);
 
-  root.querySelectorAll('input, select, textarea').forEach((el) => {
+  root.querySelector('#uob-form').querySelectorAll('input, select, textarea').forEach((el) => {
     el.addEventListener('input', () => {
       recompute(root);
       markDirty(root, true);
@@ -288,4 +298,5 @@ export function initUobCalculator() {
   on('cardProfile:changed', () => {
     // Re-fired after this module's own save; nothing else currently touches cardProfile.
   });
+  on('cardStatements:changed', () => recompute(root));
 }

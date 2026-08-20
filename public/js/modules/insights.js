@@ -1,4 +1,4 @@
-import { getMonthlyTotals, getAverageMonthlyExpense, getDistinctPeriods } from '../store.js';
+import { getMonthlyTotals, getAverageMonthlyExpense, getDistinctPeriods, getLatestCardStatement } from '../store.js';
 import { formatRM, formatPercent, round2 } from '../utils/formatters.js';
 import { MONTH_LABELS, annualPercentFor, categoryLabel, UOB_INSIGHT_INTEREST_THRESHOLD, AVALANCHE_HIGH_RATE_THRESHOLD } from '../utils/constants.js';
 import { formatDateMY } from '../utils/dateUtils.js';
@@ -97,9 +97,9 @@ function avalancheInsight(debts, cardProfile) {
   };
 }
 
-function uobLatePaymentInsight(cardProfile) {
+function uobLatePaymentInsight(cardProfile, latestStatement) {
   if (!cardProfile || cardProfile.status === 'terminated') return null;
-  const { scenarioB } = calculateUobCostSummary(cardProfile);
+  const { scenarioB } = calculateUobCostSummary(cardProfile, latestStatement);
   if (!scenarioB.late) return null;
   return {
     id: 'uob-late', severity: 'critical',
@@ -107,9 +107,9 @@ function uobLatePaymentInsight(cardProfile) {
   };
 }
 
-function uobInterestCostInsight(cardProfile) {
+function uobInterestCostInsight(cardProfile, latestStatement) {
   if (!cardProfile || cardProfile.status === 'terminated' || Number(cardProfile.balance) <= 0) return null;
-  const { scenarioB, netSavings } = calculateUobCostSummary(cardProfile);
+  const { scenarioB, netSavings } = calculateUobCostSummary(cardProfile, latestStatement);
 
   if (scenarioB.totalCost >= UOB_INSIGHT_INTEREST_THRESHOLD) {
     return {
@@ -119,7 +119,7 @@ function uobInterestCostInsight(cardProfile) {
   }
   return {
     id: 'uob-interest', severity: 'good',
-    message: `Faedah kad UOB ONE bulan ini rendah (${formatRM(scenarioB.totalCost)}) — bayaran awal anda ${formatRM(cardProfile.payment_amount)} pada ${cardProfile.payment_day}hb menjimatkan ${formatRM(netSavings)} berbanding kekalkan baki penuh. Teruskan.`,
+    message: `Faedah kad UOB ONE bulan ini rendah (${formatRM(scenarioB.totalCost)}) — bayaran pada ${formatDateMY(scenarioB.dates.paymentDate)} menjimatkan ${formatRM(netSavings)} berbanding kekalkan baki penuh. Teruskan.`,
   };
 }
 
@@ -178,17 +178,18 @@ function spendingTrendInsight(entries) {
 
 /** Rules-based (no AI) personalised nudges — see safeToSpend.js for why the
  *  underlying math stays deterministic. */
-export function generateInsights({ entries, debts, cardProfile, emergencyFund, budgets = [], period }) {
+export function generateInsights({ entries, debts, cardProfile, cardStatements = [], emergencyFund, budgets = [], period }) {
   const totals = getMonthlyTotals(entries, period.month, period.year);
   const dti = calculateDti(debts, cardProfile, totals.income);
+  const latestStatement = getLatestCardStatement(cardStatements);
 
   const insights = [
     dtiHealthInsight(dti),
     noIncomeInsight(totals, period),
     emergencyFundInsight(entries, emergencyFund),
     avalancheInsight(debts, cardProfile),
-    uobLatePaymentInsight(cardProfile),
-    uobInterestCostInsight(cardProfile),
+    uobLatePaymentInsight(cardProfile, latestStatement),
+    uobInterestCostInsight(cardProfile, latestStatement),
     waiverInsight(entries, cardProfile),
     budgetInsight(entries, budgets, period),
     spendingTrendInsight(entries),

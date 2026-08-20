@@ -194,3 +194,11 @@ export function getAverageMonthlyExpense(entries) {
 export function sum(arr) {
   return arr.reduce((a, b) => a + b, 0);
 }
+
+/** Most recent card statement by (year, month) — used as the live input for
+ *  the UOB calculator's dual-phase simulation, since payment amount/date now
+ *  live only in per-month records rather than as a static card_profile field. */
+export function getLatestCardStatement(cardStatements) {
+  if (cardStatements.length === 0) return null;
+  return [...cardStatements].sort((a, b) => b.year - a.year || b.month - a.month)[0];
+}
